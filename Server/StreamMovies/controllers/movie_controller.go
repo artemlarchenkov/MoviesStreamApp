@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/artemlarchenkov/MoviesStreamApp/Server/StreamMovies/database"
-	models "github.com/artemlarchenkov/MoviesStreamApp/Server/StreamMovies/models"
+	"github.com/artemlarchenkov/MoviesStreamApp/Server/StreamMovies/models"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
