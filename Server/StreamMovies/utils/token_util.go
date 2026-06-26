@@ -1,11 +1,18 @@
 package utils
 
 import (
+	"context"
 	"os"
 	"time"
 
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+
+	"github.com/artemlarchenkov/MoviesStreamApp/Server/StreamMovies/database"
 	jwt "github.com/golang-jwt/jwt/v5"
 )
+
+var userCollection *mongo.Collection = database.OpenCollection("users")
 
 type SignedDetatils struct {
 	Email     string
@@ -33,10 +40,10 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, error := token.SignedString([]byte(SECRET_KEY))
+	signedToken, err := token.SignedString([]byte(SECRET_KEY))
 
 	if err != nil {
-		return "", "", error
+		return "", "", err
 	}
 
 	refreshClaims := &SignedDetatils{
@@ -52,11 +59,31 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 		},
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	signedRefreshToken, error := token.SignedString([]byte(SECRET_REFRESH_KEY))
+	signedRefreshToken, err := refreshToken.SignedString([]byte(SECRET_REFRESH_KEY))
 
 	if err != nil {
-		return "", "", error
+		return "", "", err
 	}
 
 	return signedToken, signedRefreshToken, nil
+}
+
+func UpdateAllTokens(userId, token, refreshToken string) (err error) {
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+
+	updateAt, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	updateData := bson.M{
+		"$set": bson.M{
+			"token":         token,
+			"refresh_token": refreshToken,
+			"update_at":     updateAt,
+		},
+	}
+	_, err = userCollection.UpdateOne(ctx, bson.M{"user_id": userId}, updateData)
+
+	if err != nil {
+		return err
+	}
+	return nil
 }
